@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>おばあちゃんのやぎ座占い</title>
+    <style>
+        body { font-family: "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif; text-align: center; background: #fffaf0; padding: 20px 10px; color: #4e342e; }
+        h1 { color: #5d4037; font-size: 1.8rem; margin: 10px 0; }
+        .date { font-size: 1.1rem; color: #8d6e63; margin-bottom: 10px; }
+        
+        /* 占いカード */
+        .fortune-card {
+            background: white;
+            border: 4px solid #ffb300;
+            border-radius: 25px;
+            padding: 25px 15px;
+            margin: 15px auto;
+            max-width: 450px;
+            min-height: 280px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        #fortune-text { 
+            font-size: 1.6rem; 
+            font-weight: bold; 
+            color: #c62828;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            word-break: break-all;
+        }
+
+        /* ラッキー枠 */
+        .lucky-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            border-top: 2px dashed #ffe082;
+            padding-top: 20px;
+        }
+        .lucky-item-box { background: #fffde7; padding: 10px; border-radius: 10px; }
+        .lucky-label { font-size: 0.8rem; color: #795548; font-weight: bold; display: block; margin-bottom: 5px; }
+        .lucky-value { font-size: 1.1rem; color: #ef6c00; font-weight: bold; }
+
+        /* ボタン */
+        button { 
+            padding: 18px 40px; font-size: 1.4rem; font-weight: bold;
+            background: #ffa000; color: white; border: none; border-radius: 50px;
+            cursor: pointer; box-shadow: 0 5px 0 #e68a00;
+            margin-top: 10px;
+        }
+        button:active { transform: translateY(3px); box-shadow: none; }
+        button:disabled { background: #bdbdbd; box-shadow: none; cursor: not-allowed; }
+        
+        .footer-msg { margin-top: 15px; font-size: 0.9rem; color: #a1887f; }
+    </style>
+</head>
+<body>
+    <div class="date" id="today"></div>
+    <h1>♑️ やぎ座の運勢</h1>
+
+    <div class="fortune-card">
+        <div id="fortune-text">今日も元気に<br>占ってみようね</div>
+        <div class="lucky-info" id="lucky-box" style="display: none;">
+            <div class="lucky-item-box">
+                <span class="lucky-label">ラッキーカラー</span>
+                <span id="lucky-color" class="lucky-value">ー</span>
+            </div>
+            <div class="lucky-item-box">
+                <span class="lucky-label">ラッキーアイテム</span>
+                <span id="lucky-item" class="lucky-value">ー</span>
+            </div>
+        </div>
+    </div>
+    
+    <button id="uranai-btn" onclick="getFortune()">占いをみる</button>
+    <p class="footer-msg">※占いは1日1回だけですよ</p>
+
+    <script>
+        // 40種類のメッセージ
+        const messages = [
+            "今日は最高に良い日！ゆっくり近所を散歩すると、素敵な花を見つけられそうですよ。",
+            "美味しいお茶を淹れて一息つきましょう。懐かしい人から連絡があるかもしれません。",
+            "あなたの笑顔が周りの人を幸せにします。今日は鏡に向かってニッコリしてみて。",
+            "無理をせず、自分のペースで過ごすのが吉。午後の昼寝が元気の源になりますよ。",
+            "今日は電話でおしゃべりを楽しむと運気アップ！声を聞くだけで心も晴れやかになります。",
+            "昔のアルバムを眺めてみませんか？大切な思い出が、今日のあなたを応援してくれます。",
+            "お料理に一工夫すると、家族や友人に喜ばれそう。隠し味は「愛情」ですね。",
+            "背筋をすっと伸ばして深呼吸。新鮮な空気が、新しい幸運を運んできてくれます。",
+            "今日は「ありがとう」をたくさん言ってみましょう。さらに嬉しいことが返ってきます。",
+            "足元に気をつけて、一歩一歩大切に歩きましょう。穏やかな一日が待っています。",
+            "温かいスープを飲んで体を温めて。心も体もぽかぽかになると、運気が巡ります。",
+            "窓を少し開けて空気の入れ替えを。新しい風が、家の中に福を呼び込んでくれます。",
+            "今日は読書や手芸など、手先を動かすのが吉。集中すると心が落ち着きますよ。",
+            "甘いものを少しだけ食べて自分にご褒美。心にゆとりが生まれて優しくなれます。",
+            "庭やベランダの植物に声をかけてみて。緑のパワーがあなたを癒やしてくれます。",
+            "早起きは三文の徳。朝日を浴びることで、体の中から力が湧いてくる一日です。",
+            "整理整頓をすると探し物が見つかる予感。引き出しの中が幸運の鍵です。",
+            "今日は聞き上手になると運気が安定します。みんながあなたに癒やされるでしょう。",
+            "お気に入りの音楽を聴いてゆったり。リズムに乗れば、足取りも軽くなります。",
+            "夜は早めに休んで、良い夢を。明日のあなたは、今日よりもっと輝いています。",
+            "今日は「昔取った杵柄」が役に立つ日。あなたの得意なことを誰かに教えてあげて。",
+            "新しい服や帽子を身に着けてお出かけしましょう。気分が変わって良い出会いがありそう。",
+            "空を見上げて雲の形を眺めてみて。のんびりした時間が、心の洗濯になりますよ。",
+            "今日は何事も「腹八分目」が健康の秘訣。無理せず腹筋も少しだけ意識してみて。",
+            "玄関を掃除すると福の神がやってきます。福を呼び込む準備をしましょうね。",
+            "お風呂にゆっくり浸かって疲れを癒やして。好きな香りの入浴剤もおすすめです。",
+            "隣近所の方と笑顔で挨拶。明るい挨拶から、小さな幸せの輪が広がります。",
+            "今日は「書くこと」が吉。日記や手紙を書くと、自分の気持ちが整理されますよ。",
+            "足の指をグーパーと動かしてみましょう。体全体の血の巡りが良くなります。",
+            "今日という日は二度と来ない大切な日。やりたいことは後回しにせずやってみて。",
+            "肩の力を抜いてリラックス。あなたは十分頑張っています。自分を褒めてあげて。",
+            "良いニュースが飛び込んでくる予感。ワクワクする気持ちを大切に過ごしてね。",
+            "今日はちょっと贅沢な果物を食べてみて。旬のエネルギーが体に行き渡ります。",
+            "お孫さんや若い人と話すと、新しい発見がある日。楽しい刺激をもらえそう。",
+            "あなたの知恵が誰かを助けます。自信を持ってアドバイスしてあげてください。",
+            "忘れかけていた趣味を再開するチャンス。ワクワクが止まらなくなりますよ。",
+            "今日は「感謝」を形にする日。お礼の電話一一本が、絆をさらに深めます。",
+            "早寝早起きは最強の健康法。今夜はいつもより30分早く布団に入りましょう。",
+            "心穏やかに過ごせる一日。鳥のさえずりや風の音に耳を澄ませてみて。",
+            "明日の準備を少しだけ今日のうちに。余裕を持って明日を迎えられますよ。"
+        ];
+
+        // カラーとアイテムを分離して、組み合わせがランダムになるように
+        const colors = ["黄金色", "若草色", "さくら色", "空色", "山吹色", "白", "桃色", "藤色", "赤", "藍色", "茶色", "深緑", "オレンジ", "銀色", "黄色", "紺色", "ベージュ", "すみれ色", "朱色", "うぐいす色"];
+        const items = ["履き慣れた靴", "お茶碗", "手鏡", "柔らかい枕", "電話機", "古い写真", "エプロン", "ハンカチ", "便せん", "マグカップ", "カーテン", "編み物", "本", "羊羹", "ジョウロ", "クッション", "ラジオ", "帽子", "メガネ拭き", "孫の写真"];
+
+        const todayString = new Date().toLocaleDateString();
+        document.getElementById('today').innerText = todayString;
+
+        window.onload = function() {
+            const lastDate = localStorage.getItem('yagi_date');
+            if (lastDate === todayString) {
+                const savedData = JSON.parse(localStorage.getItem('yagi_data'));
+                showResult(savedData);
+                disableButton();
+            }
+        };
+
+        function getFortune() {
+            if (localStorage.getItem('yagi_date') === todayString) return;
+
+            // それぞれランダムに選ぶ
+            const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            const randomItem = items[Math.floor(Math.random() * items.length)];
+
+            const result = { msg: randomMsg, color: randomColor, item: randomItem };
+
+            showResult(result);
+            localStorage.setItem('yagi_date', todayString);
+            localStorage.setItem('yagi_data', JSON.stringify(result));
+            
+            disableButton();
+        }
+
+        function showResult(data) {
+            document.getElementById('fortune-text').innerText = data.msg;
+            document.getElementById('lucky-color').innerText = data.color;
+            document.getElementById('lucky-item').innerText = data.item;
+            document.getElementById('lucky-box').style.display = 'grid';
+        }
+
+        function disableButton() {
+            const btn = document.getElementById('uranai-btn');
+            btn.disabled = true;
+            btn.innerText = "また明日きてね";
+        }
+    </script>
+</body>
+</html>
